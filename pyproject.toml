@@ -1,0 +1,14 @@
+[project]
+name = "tselect"
+version = "0.1.0"
+description = "Selective Test Runner"
+authors = [{name = "Nihal Kumar"}]
+requires-python = ">=3.9"
+dependencies = ["pyyaml"]
+
+[project.scripts]
+tselect = "tselect.cli.main:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

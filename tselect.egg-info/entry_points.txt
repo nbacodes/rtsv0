@@ -1,0 +1,2 @@
+[console_scripts]
+tselect = tselect.cli.main:main

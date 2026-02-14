@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: tselect
+Version: 0.1.0
+Summary: Selective Test Runner
+Author: Nihal Kumar
+Requires-Python: >=3.9
+Requires-Dist: pyyaml
