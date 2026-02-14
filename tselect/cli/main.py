@@ -17,6 +17,12 @@ def main():
     # ---- run command ----
     run_parser = subparsers.add_parser("run", help="Select tests to run")
 
+    # ---- baseline command ----
+    baseline_parser = subparsers.add_parser(
+        "baseline",
+        help="Run full test suite to create baseline timing"
+    )
+
     run_parser.add_argument(
         "--changed",
         nargs="+",
@@ -92,6 +98,38 @@ def main():
                 status="PASSED" if return_code == 0 else "FAILED",
                 baseline=baseline_time,
             )
+
+    elif args.command == "baseline":
+        from pathlib import Path
+
+        repo_root = Path.cwd()
+
+        print("Running baseline tests (test/inductor)...")
+
+        cmd = [
+            "python",
+            "-m",
+            "pytest",
+            "test/inductor",
+            "--ignore=test/inductor/test_collective_autotuning.py",
+        ]
+
+        print("\nCommand:")
+        print(" ".join(cmd))
+
+        start_time = time.time()
+        return_code = execute_command(cmd)
+        duration = time.time() - start_time
+
+        cache = load_cache(repo_root)
+        cache["baseline_time"] = duration
+        save_cache(repo_root, cache)
+
+        print("\n=== BASELINE SAVED ===")
+        print(f"Baseline time: {duration:.2f}s")
+
+        exit(return_code)
+
 
     else:
         parser.print_help()
