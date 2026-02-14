@@ -1,10 +1,29 @@
 import argparse
+import time
+from pathlib import Path
+
 from tselect.utils.loader import load_yaml, load_json
 from tselect.core.selector import map_files_to_components, collect_tests_from_components
 from tselect.adapters.pytest_adapter import build_pytest_command, execute_command
-import time
 from tselect.reporting.summary import generate_summary
 from tselect.reporting.cache import load_cache, save_cache
+from tselect.adapters.baseline_detector import detect_baseline_command
+
+
+def pretty_print_command(cmd, hint):
+    print("\n=== TSELECT COMMAND ===\n")
+
+    # remove "python -m pytest"
+    pytest_parts = cmd[3:] if len(cmd) > 3 else cmd
+
+    print("pytest \\")
+    for part in pytest_parts:
+        print(f"  {part} \\")
+
+    print("\nTo execute:")
+    print(hint)
+    print()
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -16,12 +35,6 @@ def main():
 
     # ---- run command ----
     run_parser = subparsers.add_parser("run", help="Select tests to run")
-
-    # ---- baseline command ----
-    baseline_parser = subparsers.add_parser(
-        "baseline",
-        help="Run full test suite to create baseline timing"
-    )
 
     run_parser.add_argument(
         "--changed",
@@ -36,19 +49,29 @@ def main():
         help="Execute selected tests"
     )
 
+    # ---- baseline command ----
+    baseline_parser = subparsers.add_parser(
+        "baseline",
+        help="Create baseline timing"
+    )
+
+    baseline_parser.add_argument(
+        "--execute",
+        action="store_true",
+        help="Execute baseline tests"
+    )
+
     args = parser.parse_args()
 
-    # Temporary debug output
+    # ==========================================================
+    # RUN COMMAND
+    # ==========================================================
     if args.command == "run":
-
-        from pathlib import Path
 
         repo_root = Path.cwd()
 
         ownership_path = repo_root / "ownership.yaml"
         json_path = repo_root / "config" / "testSuiteTorchInductor.json"
-
-        repo_root = Path.cwd()
 
         cache = load_cache(repo_root)
         baseline_time = cache.get("baseline_time")
@@ -72,13 +95,9 @@ def main():
         total_tests = sum(class_test_count.values())
         print(f"\nTotal tests inside classes: {total_tests}")
 
-        if not selected_classes:
-            print("\nNo classes selected — falling back to full test suite.")
-
         cmd = build_pytest_command(list(selected_classes))
 
-        print("\nCommand:")
-        print(" ".join(cmd))
+        pretty_print_command(cmd, "tselect run --changed <files> --execute")
 
         if args.execute:
             start_time = time.time()
@@ -99,39 +118,32 @@ def main():
                 baseline=baseline_time,
             )
 
+    # ==========================================================
+    # BASELINE COMMAND
+    # ==========================================================
     elif args.command == "baseline":
+
         from pathlib import Path
+        import time
+        from tselect.adapters.baseline_detector import detect_baseline_command
 
         repo_root = Path.cwd()
 
-        print("Running baseline tests (test/inductor)...")
+        cmd = detect_baseline_command(repo_root)
 
-        cmd = [
-            "python",
-            "-m",
-            "pytest",
-            "test/inductor",
-            "--ignore=test/inductor/test_collective_autotuning.py",
-        ]
-
-        print("\nCommand:")
+        print("\n=== BASELINE COMMAND ===")
         print(" ".join(cmd))
 
         start_time = time.time()
         return_code = execute_command(cmd)
         duration = time.time() - start_time
 
-        cache = load_cache(repo_root)
+        cache = load_cache(repo_root) or {}
         cache["baseline_time"] = duration
         save_cache(repo_root, cache)
 
-        print("\n=== BASELINE SAVED ===")
-        print(f"Baseline time: {duration:.2f}s")
-
-        exit(return_code)
+        print(f"\nBaseline recorded: {duration:.2f}s")
 
 
     else:
         parser.print_help()
-    
-    
