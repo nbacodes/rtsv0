@@ -15,7 +15,7 @@ from tselect.adapters.git_adapter import get_changed_files
 
 
 # ==========================================================
-# Pretty Printer
+#  Pretty Printer
 # ==========================================================
 def pretty_print_command(cmd, hint):
     print("\n=== TSELECT COMMAND ===\n")
@@ -32,7 +32,7 @@ def pretty_print_command(cmd, hint):
 
 
 # ==========================================================
-# MAIN
+# Main
 # ==========================================================
 def main():
     parser = argparse.ArgumentParser(
