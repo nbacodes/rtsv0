@@ -16,7 +16,6 @@ from tselect.utils.logger import setup_logger
 
 logger = setup_logger()
 
-
 # ==========================================================
 #  Pretty Printer
 # ==========================================================
@@ -44,6 +43,12 @@ def main():
     parser = argparse.ArgumentParser(
         prog="tselect",
         description="Selective test runner",
+    )
+
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging"
     )
 
     subparsers = parser.add_subparsers(dest="command")
@@ -80,6 +85,11 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if args.debug:
+        logger.setLevel("DEBUG")
+        logger.debug("Debug logging enabled")
+
 
     # ==========================================================
     # RUN COMMAND LOGIC
